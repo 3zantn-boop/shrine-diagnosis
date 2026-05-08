@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陰陽五行・神社診断</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+    background: linear-gradient(160deg, #06060e 0%, #0e0c18 100%);
+    color: #e8e2d4;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1.2rem 5rem;
+    transition: background 1.2s ease;
+  }
+  .site-header {
+    font-size: .6rem;
+    letter-spacing: .45em;
+    color: rgba(255,255,255,.18);
+    margin-bottom: 3rem;
+    text-align: center;
+  }
+  /* ステップインジケーター */
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: 2.5rem;
+    justify-content: center;
+  }
+  .step-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.15);
+    transition: all .4s;
+  }
+  .step-dot.active { background: rgba(255,255,255,.6); transform: scale(1.3); }
+  .step-dot.done   { background: rgba(255,255,255,.35); }
+  .step-line { width: 20px; height: 1px; background: rgba(255,255,255,.1); }
+
+  /* フェードイン */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeIn .6s ease forwards; }
+
+  /* セクション共通 */
+  .section { width: 100%; max-width: 520px; text-align: center; }
+  .section-wide { width: 100%; max-width: 600px; }
+  .section-emoji { font-size: 1.8rem; margin-bottom: 1.2rem; opacity: .8; }
+  .section-title {
+    font-size: 1.4rem; font-weight: 300;
+    letter-spacing: .2em; line-height: 1.85;
+    margin-bottom: .8rem;
+  }
+  .section-desc {
+    color: rgba(255,255,255,.28); font-size: .78rem;
+    line-height: 1.9; letter-spacing: .07em;
+    margin-bottom: 2rem;
+  }
+
+  /* ボタン */
+  .btn-main {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.22);
+    color: #e8e2d4;
+    padding: .9rem 2.8rem;
+    font-size: .88rem; letter-spacing: .22em;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .3s;
+  }
+  .btn-main:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.5); }
+  .btn-sub {
+    background: transparent; border: none;
+    color: rgba(255,255,255,.28); font-size: .78rem;
+    letter-spacing: .15em; cursor: pointer;
+    font-family: inherit; transition: color .3s;
+    padding: .5rem 1rem;
+  }
+  .btn-sub:hover { color: rgba(255,255,255,.55); }
+
+  /* ご利益グリッド */
+  .benefit-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .6rem; margin-bottom: 2rem;
+  }
+  .benefit-btn {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.5);
+    padding: .7rem 1rem; cursor: pointer;
+    font-family: inherit; transition: all .25s;
+    text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; gap: .3rem;
+  }
+  .benefit-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.25); color: rgba(255,255,255,.8); }
+  .benefit-btn.active { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.45); color: #e8e2d4; }
+  .benefit-icon { font-size: 1.4rem; }
+  .benefit-label { font-size: .82rem; letter-spacing: .08em; }
+  .benefit-desc { font-size: .68rem; color: rgba(255,255,255,.3); letter-spacing: .05em; }
+
+  /* 都道府県グリッド */
+  .pref-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .4rem; margin-bottom: 1.8rem;
+  }
+  .pref-btn {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    color: rgba(255,255,255,.45);
+    padding: .45rem .3rem; font-size: .72rem;
+    letter-spacing: .02em; cursor: pointer;
+    font-family: inherit; transition: all .2s;
+    text-align: center;
+  }
+  .pref-btn:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.22); color: rgba(255,255,255,.8); }
+  .pref-btn.active { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.5); color: #e8e2d4; }
+
+  /* 生まれ年入力 */
+  .year-input {
+    background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,.2);
+    color: #e8e2d4; font-size: 2.2rem;
+    font-family: inherit; width: 180px;
+    text-align: center; padding: .4rem 0;
+    outline: none; letter-spacing: .25em;
+    transition: border-color .3s;
+    -moz-appearance: textfield;
+  }
+  .year-input::-webkit-inner-spin-button,
+  .year-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .year-input:focus { border-bottom-color: rgba(255,255,255,.6); }
+  .error-msg { color: #c47a7a; font-size: .77rem; margin: .7rem 0; letter-spacing: .05em; }
+
+  /* 十干リファレンス */
+  .jikkan-ref {
+    margin-top: 2.5rem; padding: 1rem 1.2rem;
+    border: 1px solid rgba(255,255,255,.05);
+    font-size: .7rem; color: rgba(255,255,255,.18);
+    line-height: 1.9; letter-spacing: .06em;
+    text-align: left;
+  }
+  .jikkan-ref-title { margin-bottom: .3rem; color: rgba(255,255,255,.28); letter-spacing: .15em; }
+
+  /* 結果ヘッダー */
+  .result-gogyo-emoji { font-size: 3rem; margin-bottom: 1rem; }
+  .result-birth-label { font-size: .65rem; letter-spacing: .3em; color: rgba(255,255,255,.25); margin-bottom: .6rem; }
+  .result-gogyo-kanji {
+    font-size: 3rem; font-weight: 300;
+    letter-spacing: .5em; margin-bottom: .3rem;
+  }
+  .result-gogyo-yomi { font-size: .85rem; letter-spacing: .3em; color: rgba(255,255,255,.3); margin-bottom: 1.4rem; }
+  .result-desc { font-size: .84rem; color: rgba(255,255,255,.45); line-height: 2; letter-spacing: .06em; max-width: 400px; margin: 0 auto .8rem; }
+  .result-filter-info { font-size: .72rem; color: rgba(255,255,255,.25); letter-spacing: .08em; margin-top: .5rem; }
+
+  /* タグ */
+  .tag {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,.12);
+    padding: .16rem .6rem; font-size: .68rem;
+    letter-spacing: .1em; margin-right: .3rem;
+    margin-bottom: .3rem; color: rgba(255,255,255,.4);
+  }
+  .tag.match { border-color: rgba(255,255,255,.35); color: rgba(255,255,255,.75); }
+
+  /* 神社リスト見出し */
+  .shrine-list-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 1.5rem;
+    flex-wrap: wrap; gap: .8rem;
+  }
+  .shrine-list-title { font-size: .62rem; letter-spacing: .25em; color: rgba(255,255,255,.22); }
+
+  /* 神社カード */
+  .shrine-card {
+    background: rgba(255,255,255,.025);
+    border: 1px solid rgba(255,255,255,.07);
+    padding: 1.6rem; margin-bottom: .9rem;
+    transition: all .3s;
+  }
+  .shrine-card:hover { background: rgba(255,255,255,.048); border-color: rgba(255,255,255,.13); }
+  .shrine-card-top {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: .6rem;
+    flex-wrap: wrap; gap: .6rem;
+  }
+  .shrine-name-row { display: flex; align-items: center; margin-bottom: .3rem; }
+  .rank-num {
+    display: inline-flex; align-items: center;
+    justify-content: center; width: 20px; height: 20px;
+    border: 1px solid rgba(255,255,255,.15);
+    font-size: .65rem; color: rgba(255,255,255,.35);
+    margin-right: .5rem; flex-shrink: 0;
+  }
+  .shrine-name { font-size: 1.12rem; letter-spacing: .1em; }
+  .shrine-location-row {
+    display: flex; align-items: center;
+    gap: .5rem; flex-wrap: wrap;
+  }
+  .shrine-location { font-size: .7rem; color: rgba(255,255,255,.28); letter-spacing: .07em; }
+  .dist-badge { font-size: .65rem; color: rgba(255,255,255,.3); letter-spacing: .08em; }
+  .map-btn {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.09);
+    color: rgba(255,255,255,.36);
+    padding: .28rem .8rem; font-size: .68rem;
+    cursor: pointer; letter-spacing: .08em;
+    transition: all .2s; font-family: inherit;
+    text-decoration: none; display: inline-block;
+    white-space: nowrap;
+  }
+  .map-btn:hover { background: rgba(255,255,255,.09); color: rgba(255,255,255,.75); }
+  .shrine-card-right {
+    text-align: right; font-size: .7rem;
+    line-height: 1.8; color: rgba(255,255,255,.28);
+    letter-spacing: .06em;
+  }
+  .shrine-deity { margin-bottom: .1rem; }
+  .shrine-tags { margin-bottom: .7rem; }
+  .reason-badge {
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,.08);
+    padding: .25rem .72rem; font-size: .68rem;
+    color: rgba(255,255,255,.33); letter-spacing: .06em;
+    margin-bottom: .72rem; line-height: 1.6;
+  }
+  .shrine-vibe { font-size: .82rem; color: rgba(255,255,255,.4); line-height: 1.95; letter-spacing: .05em; }
+
+  /* 区切り線 */
+  .divider { width: 36px; height: 1px; background: rgba(255,255,255,.12); margin: 2rem auto; }
+
+  /* フッター */
+  .footer {
+    margin-top: 4rem; padding-top: 1.8rem;
+    border-top: 1px solid rgba(255,255,255,.06);
+    width: 100%; max-width: 600px;
+    text-align: center; line-height: 2.2;
+  }
+  .footer-title { font-size: .72rem; color: rgba(255,255,255,.25); letter-spacing: .12em; margin-bottom: .2rem; }
+  .footer-credit { font-size: .68rem; color: rgba(255,255,255,.22); letter-spacing: .1em; margin-bottom: .2rem; }
+  .footer-credit a { color: rgba(255,255,255,.4); text-decoration: none; }
+  .footer-note { font-size: .6rem; color: rgba(255,255,255,.14); letter-spacing: .1em; }
+
+  /* 選択中バッジ */
+  .selection-badge {
+    margin-bottom: 1.2rem; font-size: .72rem;
+    color: rgba(255,255,255,.38); letter-spacing: .1em;
+  }
+  .btn-row {
+    display: flex; gap: 1rem;
+    justify-content: center; align-items: center;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 480px) {
+    .pref-grid { grid-template-columns: repeat(3, 1fr); }
+    .benefit-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="site-header">陰 陽 五 行 · 神 社 診 断</div>
+
+<!-- ステップインジケーター -->
+<div class="step-indicator" id="stepIndicator">
+  <div class="step-dot active" id="dot0"></div>
+  <div class="step-line"></div>
+  <div class="step-dot" id="dot1"></div>
+  <div class="step-line"></div>
+  <div class="step-dot" id="dot2"></div>
+</div>
+
+<!-- STEP 1: ご利益 -->
+<div class="section fade-in" id="stepBenefit">
+  <div class="section-emoji">🙏</div>
+  <h1 class="section-title">求めるご利益を選んでください</h1>
+  <p class="section-desc">複数選択可。選ばなくてもOKです。</p>
+  <div class="benefit-grid" id="benefitGrid"></div>
+  <div class="selection-badge" id="benefitBadge" style="display:none"></div>
+  <button class="btn-main" onclick="goTo('pref')">次へ →</button>
+</div>
+
+<!-- STEP 2: 都道府県 -->
+<div class="section fade-in" id="stepPref" style="display:none; max-width:520px;">
+  <div class="section-emoji">📍</div>
+  <h1 class="section-title">お住まいの都道府県を選んでください</h1>
+  <p class="section-desc">近い順に神社を表示します。スキップもできます。</p>
+  <div class="pref-grid" id="prefGrid"></div>
+  <div class="selection-badge" id="prefBadge" style="display:none"></div>
+  <div class="btn-row">
+    <button class="btn-sub" onclick="goTo('benefit')">← 戻る</button>
+    <button class="btn-main" onclick="goTo('year')">次へ →</button>
+  </div>
+</div>
+
+<!-- STEP 3: 生まれ年 -->
+<div class="section fade-in" id="stepYear" style="display:none;">
+  <div class="section-emoji">⛩</div>
+  <h1 class="section-title">生まれ年を入力してください</h1>
+  <p class="section-desc">西暦年から十干を算出し、五行属性を判定します。</p>
+  <div class="selection-badge" id="yearSummary"></div>
+  <br>
+  <input class="year-input" type="number" id="yearInput" placeholder="XXXX"
+    oninput="document.getElementById('yearError').style.display='none'"
+    onkeydown="if(event.key==='Enter')diagnose()">
+  <div class="error-msg" id="yearError" style="display:none">正しい西暦年を入力してください（例：1999）</div>
+  <div class="btn-row" style="margin-top:2rem;">
+    <button class="btn-sub" onclick="goTo('pref')">← 戻る</button>
+    <button class="btn-main" onclick="diagnose()">診断する</button>
+  </div>
+  <div class="jikkan-ref">
+    <div class="jikkan-ref-title">十干と五行の対応</div>
+    甲・乙 → 木　　丙・丁 → 火　　戊・己 → 土<br>
+    庚・辛 → 金　　壬・癸 → 水
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="section-wide fade-in" id="stepResult" style="display:none;">
+  <div style="text-align:center; margin-bottom:2.5rem;">
+    <div class="result-gogyo-emoji" id="resultEmoji"></div>
+    <div class="result-birth-label" id="resultBirthLabel"></div>
+    <div class="result-gogyo-kanji" id="resultKanji"></div>
+    <div class="result-gogyo-yomi" id="resultYomi"></div>
+    <div style="margin-bottom:1rem;" id="resultKeywords"></div>
+    <p class="result-desc" id="resultDesc"></p>
+    <div class="result-filter-info" id="resultFilterInfo"></div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="shrine-list-header">
+    <div class="shrine-list-title" id="shrineListTitle"></div>
+  </div>
+  <div id="shrineList"></div>
+  <div class="divider"></div>
+  <div style="text-align:center;">
+    <button class="btn-sub" onclick="resetAll()">最初からやり直す</button>
+  </div>
+</div>
+
+<!-- フッター -->
+<div class="footer">
+  <div class="footer-title">陰陽五行 · 神社診断</div>
+  <div class="footer-credit">© 2026 <a href="https://x.com/3zantn" target="_blank" rel="noopener noreferrer">@3zantn</a></div>
+  <div class="footer-note">二次利用・無断転載・再配布禁止</div>
+</div>
+
+<script>
+// ============================================================
+// データ
+// ============================================================
+const JIKKAN = [
+  { name:"庚（かのえ）", yomi:"かのえ", gogyo:"金" },
+  { name:"辛（かのと）", yomi:"かのと", gogyo:"金" },
+  { name:"壬（みずのえ）", yomi:"みずのえ", gogyo:"水" },
+  { name:"癸（みずのと）", yomi:"みずのと", gogyo:"水" },
+  { name:"甲（きのえ）", yomi:"きのえ", gogyo:"木" },
+  { name:"乙（きのと）", yomi:"きのと", gogyo:"木" },
+  { name:"丙（ひのえ）", yomi:"ひのえ", gogyo:"火" },
+  { name:"丁（ひのと）", yomi:"ひのと", gogyo:"火" },
+  { name:"戊（つちのえ）", yomi:"つちのえ", gogyo:"土" },
+  { name:"己（つちのと）", yomi:"つちのと", gogyo:"土" },
+];
+
+const PREFECTURES = [
+  {name:"北海道",lat:43.065,lon:141.347},{name:"青森県",lat:40.824,lon:140.740},
+  {name:"岩手県",lat:39.703,lon:141.153},{name:"宮城県",lat:38.269,lon:140.872},
+  {name:"秋田県",lat:39.718,lon:140.103},{name:"山形県",lat:38.240,lon:140.363},
+  {name:"福島県",lat:37.750,lon:140.468},{name:"茨城県",lat:36.342,lon:140.447},
+  {name:"栃木県",lat:36.566,lon:139.883},{name:"群馬県",lat:36.391,lon:139.060},
+  {name:"埼玉県",lat:35.857,lon:139.649},{name:"千葉県",lat:35.605,lon:140.123},
+  {name:"東京都",lat:35.690,lon:139.692},{name:"神奈川県",lat:35.448,lon:139.642},
+  {name:"新潟県",lat:37.902,lon:139.023},{name:"富山県",lat:36.695,lon:137.211},
+  {name:"石川県",lat:36.594,lon:136.626},{name:"福井県",lat:36.065,lon:136.222},
+  {name:"山梨県",lat:35.664,lon:138.568},{name:"長野県",lat:36.651,lon:138.181},
+  {name:"岐阜県",lat:35.391,lon:136.722},{name:"静岡県",lat:34.977,lon:138.383},
+  {name:"愛知県",lat:35.180,lon:136.907},{name:"三重県",lat:34.730,lon:136.509},
+  {name:"滋賀県",lat:35.005,lon:135.869},{name:"京都府",lat:35.021,lon:135.756},
+  {name:"大阪府",lat:34.686,lon:135.520},{name:"兵庫県",lat:34.691,lon:135.183},
+  {name:"奈良県",lat:34.685,lon:135.833},{name:"和歌山県",lat:34.226,lon:135.168},
+  {name:"鳥取県",lat:35.504,lon:134.238},{name:"島根県",lat:35.472,lon:133.051},
+  {name:"岡山県",lat:34.662,lon:133.935},{name:"広島県",lat:34.396,lon:132.460},
+  {name:"山口県",lat:34.186,lon:131.471},{name:"徳島県",lat:34.066,lon:134.560},
+  {name:"香川県",lat:34.340,lon:134.043},{name:"愛媛県",lat:33.842,lon:132.766},
+  {name:"高知県",lat:33.559,lon:133.531},{name:"福岡県",lat:33.607,lon:130.418},
+  {name:"佐賀県",lat:33.249,lon:130.299},{name:"長崎県",lat:32.745,lon:129.874},
+  {name:"熊本県",lat:32.790,lon:130.742},{name:"大分県",lat:33.238,lon:131.613},
+  {name:"宮崎県",lat:31.911,lon:131.424},{name:"鹿児島県",lat:31.560,lon:130.558},
+  {name:"沖縄県",lat:26.212,lon:127.681},
+];
+
+const BENEFITS = [
+  {id:"縁結び",label:"縁結び",icon:"🌸",desc:"恋愛・良縁"},
+  {id:"学業",label:"学業・合格",icon:"📖",desc:"勉強・試験"},
+  {id:"商売",label:"商売繁盛",icon:"💰",desc:"仕事・金運"},
+  {id:"健康",label:"健康・長寿",icon:"🌿",desc:"病気平癒"},
+  {id:"勝運",label:"勝運・必勝",icon:"⚡",desc:"勝負事"},
+  {id:"開運",label:"開運・厄除",icon:"🔮",desc:"全体運向上"},
+  {id:"安産",label:"安産・子宝",icon:"👶",desc:"子育て・出産"},
+  {id:"航海",label:"旅行・安全",icon:"🚢",desc:"交通・旅"},
+  {id:"芸能",label:"芸能・美",icon:"✨",desc:"才能・美容"},
+  {id:"農業",label:"農業・自然",icon:"🌾",desc:"豊穣・自然"},
+];
+
+const GOGYO_META = {
+  木:{emoji:"🌳",yomi:"もく",accent:"#7ec87e",glow:"rgba(126,200,126,0.35)",bg:"linear-gradient(160deg,#060e06 0%,#0c1c0c 60%,#060e06 100%)",keywords:["成長","創造","柔軟","向上心"],description:"木の気は生命力と成長を司ります。春の芽吹きのように絶えず上へ向かう意志と、しなやかに環境に適応する柔軟性を持ちます。",godsAffinity:"農業・生命・縁結びの神々"},
+  火:{emoji:"🔥",yomi:"か",accent:"#f4a06a",glow:"rgba(244,160,106,0.4)",bg:"linear-gradient(160deg,#120806 0%,#221008 60%,#120806 100%)",keywords:["情熱","明晰","直感","表現力"],description:"火の気は輝きと知性を司ります。夏の太陽のように周囲を照らし温める情熱と明晰な精神を持ちます。",godsAffinity:"火・太陽・芸能・勝利の神々"},
+  土:{emoji:"⛰️",yomi:"ど",accent:"#d4b080",glow:"rgba(212,176,128,0.35)",bg:"linear-gradient(160deg,#100c06 0%,#1e1608 60%,#100c06 100%)",keywords:["安定","包容","誠実","実直"],description:"土の気は安定と包容を司ります。大地のように揺るぎない信頼と、あらゆるものを受け入れる包容力を持ちます。",godsAffinity:"大地・豊穣・国造りの神々"},
+  金:{emoji:"✨",yomi:"こん",accent:"#e8d070",glow:"rgba(232,208,112,0.35)",bg:"linear-gradient(160deg,#0c0a04 0%,#1a1606 60%,#0c0a04 100%)",keywords:["意志","鋭敏","義","革新"],description:"金の気は意志と鋭敏さを司ります。秋の澄んだ空気のように物事を明確に見抜く洞察力と、曲げない信念を持ちます。",godsAffinity:"武・剣・正義・勝利の神々"},
+  水:{emoji:"🌊",yomi:"すい",accent:"#70c0e0",glow:"rgba(112,192,224,0.4)",bg:"linear-gradient(160deg,#04080e 0%,#081428 60%,#04080e 100%)",keywords:["知恵","洞察","流動","内省"],description:"水の気は知恵と洞察を司ります。冬の深い水のように物事の本質を静かに見通す深い知性と内省力を持ちます。",godsAffinity:"水・海・知恵・縁結びの神々"},
+};
+
+const SHRINE_DB = {
+  木:[
+    {name:"春日大社",prefecture:"奈良県",city:"奈良市",lat:34.681,lon:135.849,deity:"武甕槌命・天児屋根命",benefit:"縁結び・学業・生命力",tags:["縁結び","学業","開運","農業"],reason:"原始の森・春日山に抱かれ、木の気が満ちる聖域",vibe:"3000基の燈籠が灯るとき、木々の精霊が宿るような幽玄な世界が広がる。世界遺産の杉並木が圧巻の大社。"},
+    {name:"熊野那智大社",prefecture:"和歌山県",city:"東牟婁郡那智勝浦町",lat:33.668,lon:135.888,deity:"熊野夫須美大神",benefit:"縁結び・長寿・再生",tags:["縁結び","健康","開運"],reason:"那智の滝を御神体とし、生命の根源に触れる木の聖地",vibe:"樹齢数百年の老杉が天をつく。命の根源に触れるような生命力があふれる、熊野古道の終点にふさわしい聖地。"},
+    {name:"住吉大社",prefecture:"大阪府",city:"大阪市住吉区",lat:34.612,lon:135.493,deity:"住吉三神",benefit:"縁結び・航海・農耕",tags:["縁結び","航海","農業","開運"],reason:"清祓の力が木の気の成長エネルギーを高める",vibe:"反橋を渡るたびに穢れが祓われ清らかに再生される感覚。全国2300社の住吉神社の総本社。"},
+    {name:"北海道神宮",prefecture:"北海道",city:"札幌市中央区",lat:43.055,lon:141.319,deity:"大国魂神・大那牟遅神・少彦名神",benefit:"開拓・縁結び・商売繁盛",tags:["縁結び","商売","開運","農業"],reason:"北の大地の開拓神が木の成長・開拓エネルギーと共鳴",vibe:"広大な円山公園の森の中に鎮座。北海道随一の格式を持ち、エゾヤマザクラの名所としても知られる。"},
+    {name:"椿大神社",prefecture:"三重県",city:"鈴鹿市",lat:34.920,lon:136.472,deity:"猿田彦大神",benefit:"方位除け・縁結び・道開き",tags:["縁結び","開運","勝運"],reason:"道を拓く猿田彦が木の気の向上心・前進エネルギーと呼応",vibe:"鈴鹿山麓の深い森に抱かれた椿の大社。猿田彦大神の総本社として全国から参拝者が訪れる。"},
+    {name:"宗像大社",prefecture:"福岡県",city:"宗像市",lat:33.803,lon:130.535,deity:"田心姫神・湍津姫神・市杵島姫神",benefit:"航海・縁結び・芸能",tags:["縁結び","航海","芸能","開運"],reason:"玄界灘を渡る生命力の流れが木の気の成長を促す",vibe:"世界遺産「神宿る島」沖ノ島を管轄。辺津宮の境内は深い鎮守の森に覆われ、古代の気が漂う。"},
+    {name:"秩父神社",prefecture:"埼玉県",city:"秩父市",lat:35.994,lon:139.086,deity:"八意思兼命・知知夫彦命",benefit:"縁結び・学業・五穀豊穣",tags:["縁結び","学業","農業"],reason:"知恵と農耕の神が木の気の創造・成長と結びつく",vibe:"秩父の山々に囲まれた古社。左甚五郎作と伝わる精巧な彫刻が施された本殿が圧巻。"},
+    {name:"霧島神宮",prefecture:"鹿児島県",city:"霧島市",lat:31.933,lon:130.864,deity:"天饒石国饒石天津日高彦火瓊瓊杵尊",benefit:"縁結び・開運・子授け",tags:["縁結び","安産","開運"],reason:"霧島山の深い緑の中に宿る木の気が強力に作用する",vibe:"天孫降臨の地・霧島山に鎮座。朱色の社殿が深緑の森に映え、山岳信仰の霊気が今も息づく。"},
+    {name:"弥彦神社",prefecture:"新潟県",city:"西蒲原郡弥彦村",lat:37.698,lon:138.823,deity:"天香山命",benefit:"縁結び・開運・諸願成就",tags:["縁結び","開運","農業"],reason:"弥彦山全体が御神体で、山の木の気が全身を包む",vibe:"越後一宮として古来から崇敬を集める。弥彦山を背に杉並木の参道が続き、清浄な空気に満ちる。"},
+    {name:"上賀茂神社",prefecture:"京都府",city:"京都市北区",lat:35.059,lon:135.752,deity:"賀茂別雷大神",benefit:"雷除け・縁結び・開運",tags:["縁結び","開運","学業"],reason:"雷の神が木の気の上昇エネルギー・向上心と呼応する",vibe:"世界遺産。ならの小川が境内を流れ、二つの円錐形の立砂が神秘的。葵祭の起源となった大社。"},
+    {name:"日光東照宮",prefecture:"栃木県",city:"日光市",lat:36.758,lon:139.599,deity:"東照大権現（徳川家康公）",benefit:"開運・勝運・縁結び",tags:["開運","勝運","縁結び","商売"],reason:"深山の森に守られた木の気の宝庫",vibe:"深い杉林の中に建つ豪華絢爛な社殿。国宝・重要文化財の建築と深山の緑が圧倒的な調和を生む。"},
+    {name:"阿蘇神社",prefecture:"熊本県",city:"阿蘇市",lat:32.948,lon:131.099,deity:"健磐龍命",benefit:"開拓・農業・縁結び",tags:["農業","縁結び","開運"],reason:"大地を切り拓く開拓神が木の気の力強い成長と共鳴する",vibe:"世界最大級のカルデラを持つ阿蘇山麓の大社。農耕の神として九州全域から崇敬を集める。"},
+  ],
+  火:[
+    {name:"愛宕神社",prefecture:"京都府",city:"京都市右京区",lat:35.030,lon:135.640,deity:"火之迦具土大神",benefit:"火難除け・開運・勝運",tags:["開運","勝運","健康"],reason:"火の神の総本社として火属性の魂に最も直接的に呼応",vibe:"924段の石段を制した先にある火の総本社。頂上で見る景色は火属性の魂に語りかける力強さ。"},
+    {name:"日吉大社",prefecture:"滋賀県",city:"大津市",lat:35.075,lon:135.843,deity:"大山咋神・大己貴神",benefit:"方除け・縁結び・勝利",tags:["縁結び","勝運","開運"],reason:"山王鳥居の鋭い形が火の気の直感と知性を象徴する",vibe:"比叡山の麓に東西二宮が鎮座。山王鳥居の独特な三角形頂が火の鋭さを体現し、紅葉の名所としても名高い。"},
+    {name:"太宰府天満宮",prefecture:"福岡県",city:"太宰府市",lat:33.521,lon:130.535,deity:"菅原道真公",benefit:"学業・縁結び・開運",tags:["学業","縁結び","開運","勝運"],reason:"学問の神の知的な炎が火の気の明晰な知性と共鳴する",vibe:"梅の名所として名高い学問の神様の総本宮。心字池に架かる三つの橋を渡ると、過去・現在・未来が浄化される。"},
+    {name:"秋葉山本宮秋葉神社",prefecture:"静岡県",city:"浜松市天竜区",lat:35.088,lon:137.812,deity:"火之迦具土大神",benefit:"火難除け・開運・商売繁盛",tags:["開運","商売","健康"],reason:"標高866mの山頂に鎮座し、火の気が天地に通じる聖地",vibe:"山頂から眼下に広がる遠州の山々の絶景。秋葉詣りの古道が今も続き、火の神の霊気が満ちる。"},
+    {name:"熱田神宮",prefecture:"愛知県",city:"名古屋市熱田区",lat:35.128,lon:136.908,deity:"熱田大神（天叢雲剣）",benefit:"必勝・縁結び・商売繁盛",tags:["勝運","縁結び","商売","開運"],reason:"三種の神器・草薙剣を祀る炎の聖地、勝利の気に満ちる",vibe:"樹齢千年超の大楠が境内を覆う。剣の神気と木々の生命力が融合し、圧倒的な気に満ちた名古屋の総鎮守。"},
+    {name:"富士山本宮浅間大社",prefecture:"静岡県",city:"富士宮市",lat:35.360,lon:138.631,deity:"木花之佐久夜毘売命",benefit:"縁結び・安産・開運",tags:["縁結び","安産","開運","芸能"],reason:"富士の炎と美の女神が火の気の表現力・情熱を高める",vibe:"富士山を御神体とする全国浅間神社の総本社。湧玉池の澄んだ水と富士の雄姿が対比の美を生む。"},
+    {name:"箱根神社",prefecture:"神奈川県",city:"足柄下郡箱根町",lat:35.202,lon:138.999,deity:"瓊瓊杵尊・木花咲耶姫命",benefit:"勝運・縁結び・旅行安全",tags:["勝運","縁結び","航海","開運"],reason:"芦ノ湖畔の炎と水の交点が火の気の直感力を研ぎ澄ます",vibe:"芦ノ湖に浮かぶように見える湖上の平和の鳥居が象徴的。富士山を望む勝負運の聖地として武将に崇敬された。"},
+    {name:"城南宮",prefecture:"京都府",city:"京都市伏見区",lat:34.944,lon:135.742,deity:"国常立命・八千矛神",benefit:"方除け・縁結び・旅行安全",tags:["開運","縁結び","航海","芸能"],reason:"方位除けの炎が火の気の鋭敏な方向感覚・決断力を守護する",vibe:"平安時代から続く方除けの大社。曲水の宴で知られる庭園は四季折々の美しさを誇り、特に春の枝垂れ梅が圧巻。"},
+    {name:"諏訪大社上社本宮",prefecture:"長野県",city:"諏訪市",lat:35.994,lon:138.113,deity:"建御名方神",benefit:"勝運・五穀豊穣・縁結び",tags:["勝運","縁結び","農業"],reason:"武神の炎と山の力が火の気の勝利エネルギーと直結する",vibe:"全国最古の神社のひとつ。南アルプスを望む高地に鎮座し、諏訪湖を挟む四社の中心として威厳を放つ。"},
+    {name:"伊佐須美神社",prefecture:"福島県",city:"大沼郡会津美里町",lat:37.516,lon:139.822,deity:"伊弉諾尊・伊弉冉尊",benefit:"縁結び・五穀豊穣・開運",tags:["縁結び","農業","開運","安産"],reason:"国造りの炎が火の気の開拓エネルギーと共鳴する",vibe:"会津盆地の中心に位置する陸奥国一宮。あやめの名所として知られ、古代の気が今も漂う。"},
+    {name:"住吉大社",prefecture:"大阪府",city:"大阪市住吉区",lat:34.612,lon:135.493,deity:"住吉三神",benefit:"清祓・縁結び・航海",tags:["縁結び","航海","開運","勝運"],reason:"清めの炎が穢れを払い、火の気の輝きを際立たせる",vibe:"全国2300社の住吉神社の総本社。高燈籠が灯る夜、反橋の朱色が水面に映える光景は格別。"},
+    {name:"春日大社",prefecture:"奈良県",city:"奈良市",lat:34.681,lon:135.849,deity:"武甕槌命・経津主命",benefit:"縁結び・厄除け・勝利",tags:["縁結び","勝運","学業","開運"],reason:"武神の炎と生命の森が共鳴し、火の気の勝利エネルギーを高める",vibe:"鹿が神使として歩き回る原始林に抱かれた大社。夜の燈籠祭では無数の炎が揺れ、幽玄な世界を作る。"},
+  ],
+  土:[
+    {name:"大神神社",prefecture:"奈良県",city:"桜井市",lat:34.528,lon:135.854,deity:"大物主大神",benefit:"五穀豊穣・縁結び・病気平癒",tags:["農業","縁結び","健康","開運"],reason:"三輪山そのものが御神体、大地のエネルギーが直接宿る土の原点",vibe:"本殿を持たない日本最古の神社。三輪山全体に大地の神気が満ち、土属性の魂が最も安らげる聖地。"},
+    {name:"出雲大社",prefecture:"島根県",city:"出雲市",lat:35.401,lon:132.685,deity:"大国主大神",benefit:"縁結び・福縁・五穀豊穣",tags:["縁結び","農業","商売","開運"],reason:"国造りの大神が土の気の包容力・結びつきを最大に高める",vibe:"国造りの神・大国主大神を祀る大社中の大社。大注連縄が張られた神楽殿は大地の力強さそのもの。"},
+    {name:"伏見稲荷大社",prefecture:"京都府",city:"京都市伏見区",lat:34.967,lon:135.772,deity:"宇迦之御魂大神",benefit:"商売繁盛・五穀豊穣・開運",tags:["商売","農業","開運","縁結び"],reason:"稲荷山全体が神域で豊穣の大地エネルギーが満ちる",vibe:"無数の朱色の鳥居が連なるトンネルが世界的に有名。稲荷山を登るほど土の気・豊穣のエネルギーが高まる。"},
+    {name:"三嶋大社",prefecture:"静岡県",city:"三島市",lat:35.122,lon:138.919,deity:"事代主神",benefit:"縁結び・農業・漁業",tags:["縁結び","農業","商売"],reason:"豊穣と縁を司る神が土の気の実直・誠実さと共鳴する",vibe:"伊豆国一宮として古来から崇敬される格式ある大社。神池や自然豊かな境内が土属性の落ち着きを与える。"},
+    {name:"鶴岡八幡宮",prefecture:"神奈川県",city:"鎌倉市",lat:35.323,lon:139.556,deity:"応神天皇・比売神・神功皇后",benefit:"勝運・縁結び・子育て",tags:["勝運","縁結び","安産","開運"],reason:"源氏の守護神が鎌倉の大地に根ざし、土の安定エネルギーを放つ",vibe:"鎌倉の中心を貫く若宮大路の先にそびえる。大銀杏が長く鎮守し、武家政権の都・鎌倉の大地を守護する。"},
+    {name:"香取神宮",prefecture:"千葉県",city:"香取市",lat:35.897,lon:140.526,deity:"経津主大神",benefit:"勝運・縁結び・農業",tags:["勝運","縁結び","農業","開運"],reason:"大地を守る神の意志が土の気の実直・誠実を強固にする",vibe:"下総国一宮。深い杉林の中に鎮座し、鹿島神宮と対をなす武神の社。大地に根を張った古社の重厚感が圧倒。"},
+    {name:"久能山東照宮",prefecture:"静岡県",city:"静岡市駿河区",lat:34.946,lon:138.437,deity:"東照大権現（徳川家康公）",benefit:"勝運・開運・学業",tags:["勝運","開運","学業","商売"],reason:"大地に刻まれた1159段の石段が土の気の忍耐・実直を試す",vibe:"駿河湾を一望する久能山の山上に鎮座。国宝の社殿と海の絶景が土属性の壮大なスケールを体現する。"},
+    {name:"宇佐神宮",prefecture:"大分県",city:"宇佐市",lat:33.472,lon:131.371,deity:"応神天皇・比売大神・神功皇后",benefit:"縁結び・商売繁盛・農業",tags:["縁結び","商売","農業","開運"],reason:"豊穣の大地・豊後の地に根ざす土の気の守護の神",vibe:"全国4万社余りの八幡社の総本社。上宮・下宮が並立する独自の様式と、大楠に包まれた神域が壮大。"},
+    {name:"富士浅間神社（北口本宮）",prefecture:"山梨県",city:"富士吉田市",lat:35.480,lon:138.784,deity:"木花開耶姫命・彦火瓊瓊杵命",benefit:"縁結び・子育て・開運",tags:["縁結び","安産","開運","航海"],reason:"富士北麓の大地に根ざし、山と地の土の気が融合する",vibe:"富士登山道・吉田口の起点。樹齢千年超の杉並木が続く参道が圧巻で、富士の大地の力が体感できる。"},
+    {name:"金刀比羅宮",prefecture:"香川県",city:"仲多度郡琴平町",lat:34.184,lon:133.816,deity:"大物主神・崇徳天皇",benefit:"航海・縁結び・農業",tags:["航海","縁結び","農業","商売"],reason:"大地の神と海の守護が土の気の包容力と誠実を高める",vibe:"785段の石段の先にある讃岐のこんぴらさん。さらに奥社まで続く1368段が、土属性の忍耐と誠実を試す。"},
+    {name:"諏訪大社下社秋宮",prefecture:"長野県",city:"諏訪郡下諏訪町",lat:36.062,lon:138.097,deity:"建御名方神・八坂刀売神",benefit:"縁結び・五穀豊穣・健康",tags:["縁結び","農業","健康","開運"],reason:"大地と湖が交わる諏訪の地が土の気の安定を深める",vibe:"諏訪湖を望む高台に鎮座。御柱祭でオンバシラが大地に打ち込まれるとき、土の気との深い縁が示される。"},
+    {name:"石上神宮",prefecture:"奈良県",city:"天理市",lat:34.597,lon:135.848,deity:"布都御魂大神",benefit:"勝運・除霊・健康",tags:["勝運","健康","開運"],reason:"日本最古の刀剣の神が土の気の確固たる守護を司る",vibe:"日本最古の神社のひとつ。神聖な鶏が境内を歩き回り、古代の武器が今も御神体として奉斎される。"},
+  ],
+  金:[
+    {name:"鹿島神宮",prefecture:"茨城県",city:"鹿嶋市",lat:35.966,lon:140.633,deity:"武甕槌大神",benefit:"勝運・武道・決断力",tags:["勝運","開運","学業"],reason:"剣の神・武甕槌大神が金の気の鋭敏な意志と完全に共鳴する",vibe:"東国最古の神社。奥参道の杉並木はまるで刃のようにまっすぐ天をつき、武神の気が漲る。"},
+    {name:"香取神宮",prefecture:"千葉県",city:"香取市",lat:35.897,lon:140.526,deity:"経津主大神",benefit:"勝運・決断・縁結び",tags:["勝運","縁結び","農業","開運"],reason:"経津主大神の剣の気が金属性の義・鋭さを最大化する",vibe:"鹿島と並ぶ武神の総本宮。黒漆塗りの本殿が金の気の威厳と鋭さを象徴し、古代の武士たちも崇敬した。"},
+    {name:"白山比咩神社",prefecture:"石川県",city:"白山市",lat:36.509,lon:136.592,deity:"菊理媛尊・伊弉諾尊・伊弉冉尊",benefit:"縁結び・浄化・開運",tags:["縁結び","開運","健康","安産"],reason:"霊峰白山の澄んだ気が金の鋭敏・清明さを研ぎ澄ます",vibe:"霊峰白山を御神体とする加賀一宮。白山の清浄な空気と金の気の澄んだ鋭さが共鳴する北陸の聖地。"},
+    {name:"熱田神宮",prefecture:"愛知県",city:"名古屋市熱田区",lat:35.128,lon:136.908,deity:"熱田大神（天叢雲剣）",benefit:"必勝・縁結び・商売繁盛",tags:["勝運","縁結び","商売","開運"],reason:"三種の神器・草薙剣を祀る刃の聖地、金の気の最高の守護地",vibe:"剣の神気と大楠の生命力が融合。織田信長が桶狭間前夜に祈願した必勝祈願の聖地として名高い。"},
+    {name:"石上神宮",prefecture:"奈良県",city:"天理市",lat:34.597,lon:135.848,deity:"布都御魂大神",benefit:"勝運・呪禁・縁結び",tags:["勝運","健康","縁結び","開運"],reason:"日本最古の刀剣の神が金の気の鋭敏・決断を最も深く司る",vibe:"日本最古の神社のひとつ。神聖な鶏が境内を歩き回り、古代の武器が今も御神体として奉斎される。"},
+    {name:"春日大社",prefecture:"奈良県",city:"奈良市",lat:34.681,lon:135.849,deity:"武甕槌命・経津主命",benefit:"勝運・縁結び・厄除け",tags:["勝運","縁結び","学業","開運"],reason:"二柱の武神が同座し、金の気の義と勝利を強力に守護する",vibe:"鹿島・香取の武神が奈良に勧請された地。夜の燈籠祭では金属のように輝く炎が幽玄な空間を生む。"},
+    {name:"富士山本宮浅間大社",prefecture:"静岡県",city:"富士宮市",lat:35.360,lon:138.631,deity:"木花之佐久夜毘売命",benefit:"縁結び・安産・決断力",tags:["縁結び","安産","開運","芸能"],reason:"富士の頂が刃のように天を突き、金の気の意志の強さを高める",vibe:"富士という日本最高峰の山が御神体。その鋭くそびえる山容は金の気の向上心・意志を体現する。"},
+    {name:"諏訪大社上社本宮",prefecture:"長野県",city:"諏訪市",lat:35.994,lon:138.113,deity:"建御名方神",benefit:"勝運・武道・五穀豊穣",tags:["勝運","農業","縁結び","開運"],reason:"全国随一の武神が金の気の勝利・義の精神を後押しする",vibe:"全国最古の神社のひとつで軍神として崇敬された。南アルプスの鋭い稜線が金の気の鋭敏さを映す。"},
+    {name:"穂高神社",prefecture:"長野県",city:"安曇野市",lat:36.327,lon:137.879,deity:"穂高見命",benefit:"海上安全・縁結び・開運",tags:["航海","縁結び","開運","勝運"],reason:"北アルプスの鋭い穂高岳が御神体、金の気の鋭敏・高さを象徴",vibe:"日本アルプスの総鎮守。奥宮は北アルプス穂高岳山頂に鎮座し、金の気の極点とも言える聖地。"},
+    {name:"太宰府天満宮",prefecture:"福岡県",city:"太宰府市",lat:33.521,lon:130.535,deity:"菅原道真公",benefit:"学業・縁結び・開運",tags:["学業","縁結び","開運","商売"],reason:"鋭い学問の刃が金の気の洞察力・知性をさらに高める",vibe:"学問の神の総本宮。梅の名所として知られ、その清冽な香りが金の気の鋭敏さを引き出す。"},
+    {name:"金刀比羅宮",prefecture:"香川県",city:"仲多度郡琴平町",lat:34.184,lon:133.816,deity:"大物主神",benefit:"航海・商売繁盛・金運",tags:["航海","商売","縁結び","開運"],reason:"「金」を社号に持つ神社として金属性との縁が深い",vibe:"785段の石段を登り切った先の社殿。鋭く聳える讃岐富士を望み、金の気の意志の強さが試される。"},
+    {name:"飯縄大権現",prefecture:"長野県",city:"長野市",lat:36.696,lon:138.177,deity:"飯縄大権現",benefit:"勝運・除霊・開運",tags:["勝運","開運","健康"],reason:"戦国武将が信仰した勝利の神が金の気の革新・決断を守護する",vibe:"戦国時代の将たちが祈願した山岳霊場。上杉謙信・武田信玄も崇敬した勝利の聖地として名高い。"},
+  ],
+  水:[
+    {name:"貴船神社",prefecture:"京都府",city:"京都市左京区",lat:35.112,lon:135.764,deity:"高龗神",benefit:"縁結び・水の恵み・運気向上",tags:["縁結び","開運","農業","健康"],reason:"水の総本社として水属性の魂に最も直接的に呼応する",vibe:"深い渓谷を流れる貴船川のほとりに佇む水の社。川床の燈籠が水面に揺れる光景は水属性の原風景。"},
+    {name:"厳島神社",prefecture:"広島県",city:"廿日市市",lat:34.296,lon:132.320,deity:"市杵島姫命・田心姫命・湍津姫命",benefit:"芸能・美・財運・航海",tags:["芸能","航海","商売","縁結び"],reason:"海上に浮かぶ社殿が水属性の流動・美を究極に体現する",vibe:"満潮時に水の中に立つ大鳥居は水属性の究極の美しさ。海・島・社殿が一体となった唯一無二の聖地。"},
+    {name:"諏訪大社",prefecture:"長野県",city:"諏訪市",lat:35.994,lon:138.113,deity:"建御名方神・八坂刀売神",benefit:"縁結び・勝運・五穀豊穣",tags:["縁結び","勝運","農業","健康"],reason:"諏訪湖の深い水が水の気の知恵・洞察を映し出す鏡",vibe:"諏訪湖を中心に四社が鎮座。湖面に映る山々と社殿が、水の深い知恵を語りかける全国最古の神社。"},
+    {name:"宗像大社",prefecture:"福岡県",city:"宗像市",lat:33.803,lon:130.535,deity:"田心姫神・湍津姫神・市杵島姫神",benefit:"航海・縁結び・芸能",tags:["航海","縁結び","芸能","開運"],reason:"玄界灘を渡る三女神の深い海の知恵が水の気と共鳴する",vibe:"世界遺産「神宿る島」沖ノ島を管轄。4万点以上の奉献品が今も海底に眠る、謎に包まれた水の聖地。"},
+    {name:"住吉大社",prefecture:"大阪府",city:"大阪市住吉区",lat:34.612,lon:135.493,deity:"住吉三神",benefit:"航海・清祓・縁結び",tags:["航海","縁結び","開運","農業"],reason:"航海の神として海と水を司り、水の気の清浄さを与える",vibe:"海を渡る航海の神を祀る全国住吉神社の総本社。心字池と反橋が水の気の美しい流れを象徴する。"},
+    {name:"玉前神社",prefecture:"千葉県",city:"長生郡一宮町",lat:35.372,lon:140.372,deity:"玉依姫命",benefit:"縁結び・子宝・航海",tags:["縁結び","安産","航海","開運"],reason:"海の女神が水の気の感受性・直感を最大に高める",vibe:"上総国一宮。九十九里浜の近くに鎮座し、海の気を直接受ける。レイラインの起点として知られる神秘の地。"},
+    {name:"塩竈神社",prefecture:"宮城県",city:"塩竈市",lat:38.313,lon:141.024,deity:"塩土老翁神・武甕槌神",benefit:"航海・縁結び・安産",tags:["航海","縁結び","安産","開運"],reason:"塩と海の神が水の気の知恵・洞察を北の海から守護する",vibe:"陸奥国一宮。202段の石段の先に鎮座し、松島湾を望む絶景が広がる東北随一の格式ある社。"},
+    {name:"熊野速玉大社",prefecture:"和歌山県",city:"新宮市",lat:33.725,lon:135.991,deity:"熊野速玉大神・熊野夫須美大神",benefit:"縁結び・諸願成就・縁切り",tags:["縁結び","開運","健康","農業"],reason:"熊野川の深い流れの傍らに鎮座し、水の浄化と洞察力を高める",vibe:"熊野三山のひとつ。熊野川を遡る水の参詣道の終点として、水属性の旅の聖地として名高い。"},
+    {name:"龍田大社",prefecture:"奈良県",city:"生駒郡三郷町",lat:34.606,lon:135.725,deity:"志那都比古神・志那都比売神",benefit:"縁結び・農業・開運",tags:["縁結び","農業","開運","健康"],reason:"風と水が交わる自然のエネルギーが水の気の流動性を高める",vibe:"風の神の総本社として古来より朝廷の崇敬を受ける。紅葉の名所として名高く、川沿いの風景が美しい。"},
+    {name:"金刀比羅宮",prefecture:"香川県",city:"仲多度郡琴平町",lat:34.184,lon:133.816,deity:"大物主神",benefit:"航海・縁結び・商売繁盛",tags:["航海","縁結び","商売","開運"],reason:"海の守護神として水の気の深い知恵・洞察と縁が深い",vibe:"四国の霊山・象頭山に鎮座する海の神。瀬戸内海の漁師や船乗りたちが命がけで参拝した水の聖地。"},
+    {name:"伊雑宮",prefecture:"三重県",city:"志摩市",lat:34.370,lon:136.812,deity:"天照大御神御魂",benefit:"五穀豊穣・縁結び・海の恵み",tags:["農業","縁結び","航海","開運"],reason:"海女の里・志摩の海に近く、水の気の恵みと知恵が満ちる",vibe:"伊勢神宮の別宮のひとつ。志摩の豊かな海に近く、御田植式が有名な田と海の聖地。"},
+    {name:"富士山本宮浅間大社",prefecture:"静岡県",city:"富士宮市",lat:35.360,lon:138.631,deity:"木花之佐久夜毘売命",benefit:"縁結び・安産・開運",tags:["縁結び","安産","開運","芸能"],reason:"湧玉池の清冽な水が水の気の知恵と浄化を象徴する",vibe:"富士の雪解け水が湧き出す湧玉池は水属性の聖なる水源。その清らかさが水の気をさらに高める。"},
+  ],
+};
+
+// ============================================================
+// 状態
+// ============================================================
+let selectedBenefits = [];
+let selectedPref = null;
+let currentGogyo = null;
+let currentJikkan = null;
+let currentShrines = [];
+
+// ============================================================
+// 初期化
+// ============================================================
+function init() {
+  // ご利益ボタン生成
+  const grid = document.getElementById('benefitGrid');
+  BENEFITS.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'benefit-btn';
+    btn.id = 'benefit-' + b.id;
+    btn.innerHTML = `<span class="benefit-icon">${b.icon}</span><span class="benefit-label">${b.label}</span><span class="benefit-desc">${b.desc}</span>`;
+    btn.onclick = () => toggleBenefit(b.id);
+    grid.appendChild(btn);
+  });
+
+  // 都道府県ボタン生成
+  const prefGrid = document.getElementById('prefGrid');
+  PREFECTURES.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'pref-btn';
+    btn.id = 'pref-' + p.name;
+    btn.textContent = p.name;
+    btn.onclick = () => togglePref(p);
+    prefGrid.appendChild(btn);
+  });
+}
+
+// ============================================================
+// ご利益トグル
+// ============================================================
+function toggleBenefit(id) {
+  const idx = selectedBenefits.indexOf(id);
+  if (idx === -1) selectedBenefits.push(id);
+  else selectedBenefits.splice(idx, 1);
+  document.getElementById('benefit-' + id).classList.toggle('active', selectedBenefits.includes(id));
+  const badge = document.getElementById('benefitBadge');
+  if (selectedBenefits.length > 0) {
+    badge.style.display = 'block';
+    badge.textContent = '選択中：' + selectedBenefits.map(i => BENEFITS.find(b=>b.id===i).label).join('・');
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ============================================================
+// 都道府県トグル
+// ============================================================
+function togglePref(p) {
+  if (selectedPref && selectedPref.name === p.name) {
+    selectedPref = null;
+    document.getElementById('pref-' + p.name).classList.remove('active');
+    document.getElementById('prefBadge').style.display = 'none';
+  } else {
+    if (selectedPref) document.getElementById('pref-' + selectedPref.name).classList.remove('active');
+    selectedPref = p;
+    document.getElementById('pref-' + p.name).classList.add('active');
+    const badge = document.getElementById('prefBadge');
+    badge.style.display = 'block';
+    badge.textContent = '選択中：' + p.name;
+  }
+}
+
+// ============================================================
+// 画面遷移
+// ============================================================
+function goTo(step) {
+  ['stepBenefit','stepPref','stepYear','stepResult'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('stepIndicator').style.display = 'flex';
+
+  const stepMap = {benefit:0, pref:1, year:2, result:-1};
+  const stepIdx = stepMap[step];
+  ['dot0','dot1','dot2'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'step-dot' + (i === stepIdx ? ' active' : i < stepIdx ? ' done' : '');
+  });
+
+  if (step === 'result') {
+    document.getElementById('stepIndicator').style.display = 'none';
+    document.getElementById('stepResult').style.display = 'block';
+  } else {
+    const idMap = {benefit:'stepBenefit', pref:'stepPref', year:'stepYear'};
+    const el = document.getElementById(idMap[step]);
+    el.style.display = 'block';
+    el.classList.remove('fade-in');
+    void el.offsetWidth;
+    el.classList.add('fade-in');
+  }
+
+  // 生まれ年ページのサマリー更新
+  if (step === 'year') {
+    const parts = [];
+    if (selectedBenefits.length > 0) parts.push(selectedBenefits.map(i=>BENEFITS.find(b=>b.id===i).icon).join('') + ' ' + selectedBenefits.map(i=>BENEFITS.find(b=>b.id===i).label).join('・'));
+    if (selectedPref) parts.push('📍 ' + selectedPref.name + 'から近い順');
+    document.getElementById('yearSummary').textContent = parts.join('　');
+  }
+}
+
+// ============================================================
+// 距離計算
+// ============================================================
+function calcDist(lat1, lon1, lat2, lon2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// ============================================================
+// 診断
+// ============================================================
+function diagnose() {
+  const y = parseInt(document.getElementById('yearInput').value);
+  if (!y || isNaN(y) || y < 1900 || y > 2100) {
+    document.getElementById('yearError').style.display = 'block';
+    return;
+  }
+
+  currentJikkan = JIKKAN[y % 10];
+  currentGogyo = currentJikkan.gogyo;
+  const meta = GOGYO_META[currentGogyo];
+
+  // 神社絞り込み・ソート
+  let all = SHRINE_DB[currentGogyo];
+  let filtered = selectedBenefits.length === 0 ? [...all] : all.filter(s => selectedBenefits.some(b => s.tags.includes(b)));
+  if (filtered.length === 0) filtered = [...all];
+  if (selectedPref) {
+    filtered.sort((a,b) => calcDist(selectedPref.lat,selectedPref.lon,a.lat,a.lon) - calcDist(selectedPref.lat,selectedPref.lon,b.lat,b.lon));
+  } else {
+    filtered = shuffle(filtered);
+  }
+  currentShrines = filtered.slice(0, 6);
+
+  // 背景色変更
+  document.body.style.background = meta.bg;
+
+  // 結果ヘッダー
+  document.getElementById('resultEmoji').textContent = meta.emoji;
+  document.getElementById('resultBirthLabel').textContent = `${y}年生まれ · ${currentJikkan.name}（${currentJikkan.yomi}）`;
+  document.getElementById('resultKanji').textContent = currentGogyo;
+  document.getElementById('resultKanji').style.color = meta.accent;
+  document.getElementById('resultKanji').style.textShadow = `0 0 50px ${meta.glow}, 0 0 100px ${meta.glow}`;
+  document.getElementById('resultYomi').textContent = meta.yomi + 'の気';
+  document.getElementById('resultKeywords').innerHTML = meta.keywords.map(k=>`<span class="tag">${k}</span>`).join('');
+  document.getElementById('resultDesc').textContent = meta.description;
+
+  const filterParts = [];
+  if (selectedBenefits.length > 0) filterParts.push('絞り込み：' + selectedBenefits.map(i=>BENEFITS.find(b=>b.id===i).label).join('・'));
+  if (selectedPref) filterParts.push('📍 ' + selectedPref.name + 'から近い順');
+  document.getElementById('resultFilterInfo').textContent = filterParts.join('　');
+
+  // 神社リスト
+  document.getElementById('shrineListTitle').innerHTML =
+    `${meta.emoji} ${currentGogyo}属性 · おすすめ神社 ${currentShrines.length}社` +
+    (selectedPref ? `<span style="margin-left:.8rem;color:rgba(255,255,255,.18)">（${selectedPref.name}から近い順）</span>` : '');
+
+  const list = document.getElementById('shrineList');
+  list.innerHTML = '';
+  currentShrines.forEach((shrine, idx) => {
+    const dist = selectedPref ? calcDist(selectedPref.lat, selectedPref.lon, shrine.lat, shrine.lon) : null;
+    const distLabel = dist !== null ? (dist < 100 ? `約${Math.round(dist)}km` : `約${Math.round(dist/10)*10}km`) : '';
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shrine.name+' '+shrine.prefecture+shrine.city)}`;
+    const tagsHtml = shrine.tags.map(t => `<span class="tag${selectedBenefits.includes(t)?' match':''}">${t}</span>`).join('');
+
+    list.innerHTML += `
+      <div class="shrine-card">
+        <div class="shrine-card-top">
+          <div style="flex:1">
+            <div class="shrine-name-row">
+              ${selectedPref ? `<span class="rank-num">${idx+1}</span>` : ''}
+              <span class="shrine-name">${shrine.name}</span>
+            </div>
+            <div class="shrine-location-row">
+              <span class="shrine-location">📍 ${shrine.prefecture} ${shrine.city}</span>
+              ${distLabel ? `<span class="dist-badge">(${distLabel})</span>` : ''}
+              <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="map-btn">地図 →</a>
+            </div>
+          </div>
+          <div class="shrine-card-right">
+            <div class="shrine-deity" style="color:${meta.accent};opacity:.85">${shrine.deity}</div>
+            <div>${shrine.benefit}</div>
+          </div>
+        </div>
+        <div class="shrine-tags">${tagsHtml}</div>
+        <div class="reason-badge">⚡ ${shrine.reason}</div>
+        <p class="shrine-vibe">${shrine.vibe}</p>
+      </div>`;
+  });
+
+  goTo('result');
+}
+
+// ============================================================
+// リセット
+// ============================================================
+function resetAll() {
+  selectedBenefits = [];
+  selectedPref = null;
+  currentGogyo = null;
+  currentJikkan = null;
+  currentShrines = [];
+  document.getElementById('yearInput').value = '';
+  document.getElementById('yearError').style.display = 'none';
+  document.querySelectorAll('.benefit-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.pref-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('benefitBadge').style.display = 'none';
+  document.getElementById('prefBadge').style.display = 'none';
+  document.body.style.background = 'linear-gradient(160deg,#06060e 0%,#0e0c18 100%)';
+  goTo('benefit');
+}
+
+init();
+</script>
+</body>
+</html>
